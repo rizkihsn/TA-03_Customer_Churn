@@ -1,0 +1,259 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediksi Customer Churn</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 35px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px #00000012;
+        }
+
+        h1 { text-align: center; color: #1d4ed8; }
+        .subtitle { text-align: center; color: #64748b; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            background: white;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 24px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover { background: #1d4ed8; }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #eff6ff;
+            text-align: center;
+        }
+
+        .result h2 { margin-top: 0; }
+
+        @media (max-width: 600px) {
+            .container { margin: 12px; padding: 18px; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Prediksi Customer Churn</h1>
+    <p class="subtitle">
+        Prediksi risiko pelanggan berhenti berlangganan
+        menggunakan Logistic Regression.
+    </p>
+
+    <form method="POST">
+        <div class="form-grid">
+            <div>
+                <label>Jenis Kelamin</label>
+                <select name="gender">
+                    <option>Female</option>
+                    <option>Male</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Senior Citizen</label>
+                <select name="SeniorCitizen">
+                    <option value="0">Tidak</option>
+                    <option value="1">Ya</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Memiliki Pasangan</label>
+                <select name="Partner">
+                    <option>Yes</option><option>No</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Memiliki Tanggungan</label>
+                <select name="Dependents">
+                    <option>Yes</option><option>No</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Lama Berlangganan (bulan)</label>
+                <input type="number" name="tenure" min="0" max="72"
+                       value="12" required>
+            </div>
+
+            <div>
+                <label>Layanan Telepon</label>
+                <select name="PhoneService">
+                    <option>Yes</option><option>No</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Multiple Lines</label>
+                <select name="MultipleLines">
+                    <option>No</option>
+                    <option>Yes</option>
+                    <option>No phone service</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Layanan Internet</label>
+                <select name="InternetService">
+                    <option>DSL</option>
+                    <option>Fiber optic</option>
+                    <option>No</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Online Security</label>
+                <select name="OnlineSecurity">
+                    <option>Yes</option>
+                    <option>No</option>
+                    <option>No internet service</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Online Backup</label>
+                <select name="OnlineBackup">
+                    <option>Yes</option>
+                    <option>No</option>
+                    <option>No internet service</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Device Protection</label>
+                <select name="DeviceProtection">
+                    <option>Yes</option>
+                    <option>No</option>
+                    <option>No internet service</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Tech Support</label>
+                <select name="TechSupport">
+                    <option>Yes</option>
+                    <option>No</option>
+                    <option>No internet service</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Streaming TV</label>
+                <select name="StreamingTV">
+                    <option>Yes</option>
+                    <option>No</option>
+                    <option>No internet service</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Streaming Movies</label>
+                <select name="StreamingMovies">
+                    <option>Yes</option>
+                    <option>No</option>
+                    <option>No internet service</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Jenis Kontrak</label>
+                <select name="Contract">
+                    <option>Month-to-month</option>
+                    <option>One year</option>
+                    <option>Two year</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Tagihan Tanpa Kertas</label>
+                <select name="PaperlessBilling">
+                    <option>Yes</option><option>No</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Metode Pembayaran</label>
+                <select name="PaymentMethod">
+                    <option>Electronic check</option>
+                    <option>Mailed check</option>
+                    <option>Bank transfer (automatic)</option>
+                    <option>Credit card (automatic)</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Tagihan Bulanan ($)</label>
+                <input type="number" name="MonthlyCharges"
+                       min="0" step="0.01" value="70" required>
+            </div>
+
+            <div>
+                <label>Total Tagihan ($)</label>
+                <input type="number" name="TotalCharges"
+                       min="0" step="0.01" value="840" required>
+            </div>
+        </div>
+
+        <button type="submit">Prediksi Churn</button>
+    </form>
+
+    {% if hasil is not none %}
+    <div class="result">
+        <h2>Hasil Prediksi: {{ hasil }}</h2>
+        <p>Probabilitas churn: {{ "%.2f"|format(probabilitas) }}%</p>
+        <p>Hasil ini merupakan estimasi model, bukan kepastian.</p>
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>
