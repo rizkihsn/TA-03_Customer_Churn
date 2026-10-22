@@ -11,12 +11,16 @@ Script ini melakukan:
 =============================================================
 """
 
+import sys
 import os
 import warnings
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 warnings.filterwarnings("ignore")
 

@@ -11,15 +11,20 @@ Script ini melakukan:
 =============================================================
 """
 
+import sys
 import os
 import warnings
 import pandas as pd
 import joblib
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_auc_score
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
 
@@ -68,15 +73,27 @@ preprocessor = ColumnTransformer([
     ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features)
 ])
 
+# Model menggunakan parameter optimal C=10 hasil tuning GridSearchCV (05_validasi_model.py)
 model = Pipeline([
     ("preprocessor", preprocessor),
     ("smote",        SMOTE(random_state=42)),
-    ("classifier",   LogisticRegression(max_iter=2000, random_state=42))
+    ("classifier",   LogisticRegression(C=10, max_iter=2000, random_state=42))
 ])
 
-print("\n▸ Melatih model final ...")
+print("\n▸ Melatih model final (C=10, SMOTE) ...")
 model.fit(X_train, y_train)
 print("✔  Pelatihan selesai!")
+
+# Evaluasi pada data uji untuk memastikan konsistensi
+y_pred = model.predict(X_test)
+y_prob = model.predict_proba(X_test)[:, 1]
+print("\n" + "=" * 55)
+print("  EVALUASI MODEL PADA DATA UJI (C=10)")
+print("=" * 55)
+print(f"  Akurasi  : {accuracy_score(y_test, y_pred) * 100:.2f}%")
+print(f"  Recall   : {recall_score(y_test, y_pred) * 100:.2f}%")
+print(f"  F1-Score : {f1_score(y_test, y_pred) * 100:.2f}%")
+print(f"  ROC-AUC  : {roc_auc_score(y_test, y_prob) * 100:.2f}%")
 
 # ══════════════════════════════════════════════════════════
 #  4. SIMPAN MODEL DAN METADATA

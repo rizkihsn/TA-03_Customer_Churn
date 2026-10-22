@@ -12,12 +12,16 @@ Script ini melakukan:
 =============================================================
 """
 
+import sys
 import os
 import warnings
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
@@ -80,7 +84,7 @@ preprocessor = ColumnTransformer([
 model = Pipeline([
     ("preprocessor", preprocessor),
     ("smote",        SMOTE(random_state=42)),
-    ("classifier",   LogisticRegression(max_iter=2000, random_state=42))
+    ("classifier",   LogisticRegression(C=10, max_iter=2000, random_state=42))
 ])
 
 print("\n▸ Melatih model (LogisticRegression + SMOTE) ...")

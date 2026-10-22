@@ -31,19 +31,34 @@ Proyek ini membangun sistem prediksi churn pelanggan telekomunikasi berbasis kla
 
 ## 🤖 Model & Hasil Evaluasi
 
-Model dibangun menggunakan pipeline terintegrasi: **One-Hot Encoding** + **StandardScaler** + penanganan class imbalance dengan **SMOTE** + **Logistic Regression**.
+Model dibangun menggunakan pipeline terintegrasi: **One-Hot Encoding** + **StandardScaler** + penanganan class imbalance dengan **SMOTE** + **Logistic Regression (C=10)**.
 
 | Metrik Evaluasi | Nilai (Data Uji) | Keterangan |
 |-----------------|------------------|------------|
-| **Akurasi Data Uji** | **73.21%** | Performa klasifikasi keseluruhan |
-| **Recall (Churn)** | **77.81%** | ⭐ **Metrik paling kritis** (minimalkan False Negative) |
-| **Precision (Churn)**| **49.74%** | Proporsi prediksi churn yang tepat |
-| **F1-Score (Churn)** | **60.69%** | Keseimbangan precision & recall |
-| **ROC-AUC** | **83.35%** | Kemampuan diskriminasi model sangat baik (> 0.8) |
+| **Akurasi Data Uji** | **73.28%** | Performa klasifikasi keseluruhan pada data uji (1.407 sampel) |
+| **Recall (Churn)** | **78.07%** | ⭐ **Metrik paling kritis** (berhasil mendeteksi 292 dari 374 pelanggan churn) |
+| **Precision (Churn)**| **49.83%** | Proporsi prediksi churn yang tepat |
+| **F1-Score (Churn)** | **60.83%** | Harmonic mean precision & recall |
+| **ROC-AUC** | **83.29%** | Kemampuan diskriminasi model sangat baik (> 0.8) |
 | **Validation AUC (5-Fold)** | **84.55%** | Skor rata-rata Stratified K-Fold CV (C optimal = 10) |
 
 > 💡 **Alasan Prioritas Recall:**  
-> Pada domain retensi pelanggan, **False Negative (FN)** — pelanggan yang sebenarnya akan churn namun diprediksi aman — jauh lebih merugikan secara finansial dibanding **False Positive (FP)** (mengeluarkan biaya retensi/promo untuk pelanggan yang sebenarnya loyal).
+> Pada domain retensi pelanggan telekomunikasi, **False Negative (FN)** — pelanggan yang sebenarnya akan berhenti berlangganan tetapi terlewat dan diprediksi aman — merupakan kerugian terbesar karena perusahaan kehilangan pendapatan jangka panjang (*loss of customer lifetime value*). Sebaliknya, **False Positive (FP)** hanya menimbulkan biaya retensi kecil (misal: pemberian voucher diskon kepada pelanggan yang sebenarnya loyal).
+
+---
+
+### ⚖️ Aturan Segmentasi Risiko Bisnis vs Ambang Batas Klasifikasi Biner
+
+Penting untuk dicatat bahwa model **Logistic Regression** secara standar matematis menggunakan ambang batas klasifikasi biner **50% (0.5)**:
+- Probabilitas $\ge 50\%$ diklasifikasikan sebagai **Churn (1)**.
+- Probabilitas $< 50\%$ diklasifikasikan sebagai **Tidak Churn (0)**.
+
+Namun, untuk kebutuhan operasional manajemen bisnis di dunia nyata, aplikasi ini menerapkan **aturan segmentasi risiko manajerial (*business decision threshold*)**:
+1. **Risiko Rendah ($< 40\%$)**: Pelanggan aman dan loyal. Diberikan program apresiasi standar.
+2. **Risiko Sedang ($40\% - 70\%$)**: Pelanggan mulai menunjukkan tanda ketidakpuasan layanan. Meskipun probabilitasnya belum tentu melampaui 50%, tindakan pencegahan proaktif (seperti customer care check-in atau opsi paket fleksibel) perlu dimulai lebih awal.
+3. **Risiko Tinggi ($\ge 70\%$)**: Pelanggan hampir pasti akan berhenti berlangganan dalam waktu dekat. Memerlukan intervensi agresif dari tim retensi khusus.
+
+*Pengelompokan 40% dan 70% ini merupakan aturan bisnis aplikasi untuk strategi preventif, bukan batas yang otomatis diputuskan oleh algoritma Logistic Regression.*
 
 ---
 
@@ -135,6 +150,15 @@ python app.py
 ### 5. Akses melalui browser
 - Form Prediksi: [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 - Dashboard Visualisasi EDA: [http://127.0.0.1:5000/eda](http://127.0.0.1:5000/eda)
+
+### 📦 Tips Pembuatan Arsip ZIP untuk Pengumpulan Tugas
+Jika mengumpulkan proyek dalam bentuk file ZIP ke dosen atau platform e-learning:
+- **Jangan menyertakan folder `.venv/`** karena berukuran ratusan MB dan berisi library lokal yang spesifik untuk mesin Anda.
+- Gunakan perintah `git archive` di terminal agar ZIP yang dihasilkan bersih dan hanya berisi file kode proyek:
+  ```powershell
+  git archive -o TA-03_Customer_Churn.zip HEAD
+  ```
+  *(Perintah ini menghasilkan file zip ringan hanya sekitar ~1–2 MB tanpa folder `.venv`)*
 
 ---
 

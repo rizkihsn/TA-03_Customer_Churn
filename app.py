@@ -17,13 +17,14 @@ MODEL_PATH = os.path.join(BASE_DIR, "models", "model_churn.pkl")
 app   = Flask(__name__)
 model = joblib.load(MODEL_PATH)
 
-# Statistik model untuk ditampilkan di UI
+# Statistik model final (hasil tuning C=10 dengan Stratified 5-Fold CV)
 MODEL_STATS = {
-    "accuracy" : 73.13,
-    "recall"   : 77.54,
-    "auc"      : 83.34,
-    "f1"       : 60.54,
-    "algorithm": "Logistic Regression + SMOTE",
+    "accuracy" : 73.28,
+    "recall"   : 78.07,
+    "auc"      : 83.29,
+    "f1"       : 60.83,
+    "cv_auc"   : 84.55,
+    "algorithm": "Logistic Regression (C=10) + SMOTE",
     "dataset"  : "Telco Customer Churn (7,032 records)",
 }
 
@@ -33,10 +34,10 @@ MODEL_STATS = {
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    hasil       = None
+    hasil        = None
     probabilitas = None
-    risk_level  = None
-    form_data   = {}
+    risk_level   = None
+    form_data    = {}
 
     if request.method == "POST":
         form_data = request.form.to_dict()
@@ -64,9 +65,17 @@ def index():
         }
 
         X_input      = pd.DataFrame([data])
-        prediksi     = model.predict(X_input)[0]
         probabilitas = round(model.predict_proba(X_input)[0][1] * 100, 2)
 
+        # ── Aturan Segmentasi Risiko Bisnis ─────────────────────────
+        # Catatan: Standar decision boundary biner Logistic Regression
+        # adalah 50% (probabilitas >= 50% -> churn).
+        # Namun untuk strategi mitigasi retensi pelanggan proaktif,
+        # aplikasi membagi probabilitas menjadi 3 tier risiko bisnis:
+        #   - < 40%      : Risiko Rendah  (pelanggan relatif loyal)
+        #   - 40% - 70%  : Risiko Sedang  (perlu perhatian & diskon/upgrade)
+        #   - >= 70%     : Risiko Tinggi  (intervensi retensi agresif segera)
+        # ────────────────────────────────────────────────────────────
         if probabilitas >= 70:
             risk_level = "high"
             hasil      = "Berisiko Tinggi Churn"
