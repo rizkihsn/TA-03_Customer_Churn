@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChurnSense — Visualisasi EDA</title>
+  <meta name="description" content="Visualisasi eksplorasi data (EDA) Customer Churn: distribusi target, fitur numerik, kategorikal, heatmap korelasi, confusion matrix, dan ROC curve." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-base   : #0d0608;
+      --bg-card   : #1a0b10;
+      --border    : #3b141e;
+      --text-main : #fdf2f4;
+      --text-muted: #a68d93;
+      --red-400   : #f87171;
+      --red-500   : #ef4444;
+      --red-600   : #dc2626;
+      --radius    : 14px;
+      --shadow    : 0 4px 24px rgba(0,0,0,.6);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    /* Navbar */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(13,6,8,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; gap: 1rem;
+      height: 60px;
+    }
+    .nav-logo {
+      font-size: 1.2rem; font-weight: 800;
+      background: linear-gradient(90deg, var(--red-400), var(--red-600));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-links { display: flex; gap: 1.5rem; margin-left: auto; }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none;
+      font-size: .9rem; font-weight: 500; transition: color .2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--text-main); }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 4rem 1.5rem 2.5rem;
+      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(220,38,38,.16), transparent);
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(220,38,38,.15);
+      border: 1px solid rgba(239,68,68,.35);
+      color: var(--red-400);
+      font-size: .78rem; font-weight: 600; letter-spacing: .05em;
+      padding: .3rem .9rem; border-radius: 99px;
+      margin-bottom: 1.5rem; text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.5rem);
+      font-weight: 800; letter-spacing: -.03em; margin-bottom: .8rem;
+    }
+    .hero h1 span {
+      background: linear-gradient(90deg, var(--red-400), var(--red-600));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p { color: var(--text-muted); font-size: 1rem; max-width: 550px; margin: 0 auto; }
+
+    /* Tabs */
+    .tabs-wrap { max-width: 980px; margin: 2rem auto 0; padding: 0 1.5rem; }
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: .5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0;
+      margin-bottom: 2rem;
+    }
+    .tab-btn {
+      background: none; border: none;
+      padding: .6rem 1.1rem;
+      color: var(--text-muted);
+      font-family: inherit; font-size: .85rem; font-weight: 600;
+      cursor: pointer; border-radius: 8px 8px 0 0;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn:hover { color: var(--text-main); }
+    .tab-btn.active {
+      color: var(--red-400);
+      border-bottom-color: var(--red-500);
+    }
+
+    /* Tab Panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+    /* Chart Card */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-title {
+      font-size: .95rem; font-weight: 700; margin-bottom: .5rem;
+    }
+    .chart-desc {
+      font-size: .83rem; color: var(--text-muted);
+      margin-bottom: 1.2rem; line-height: 1.5;
+    }
+    .chart-card img {
+      width: 100%; border-radius: 8px;
+      background: white;
+    }
+
+    /* Insight cards */
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .insight-card {
+      background: rgba(220,38,38,.07);
+      border: 1px solid rgba(220,38,38,.22);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+    }
+    .insight-card .ic-title {
+      font-size: .78rem; font-weight: 700;
+      color: var(--red-400); text-transform: uppercase;
+      letter-spacing: .05em; margin-bottom: .4rem;
+    }
+    .insight-card p {
+      font-size: .85rem; color: var(--text-muted); line-height: 1.5;
+    }
+
+    footer {
+      text-align: center; padding: 1.5rem;
+      color: var(--text-muted); font-size: .8rem;
+      border-top: 1px solid var(--border); margin-top: 3rem;
+    }
+    footer a { color: var(--red-400); text-decoration: none; }
+
+    @media (max-width:600px) {
+      .hero { padding: 2.5rem 1rem 1.5rem; }
+      .chart-card { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav>
+  <span class="nav-logo">⚡ ChurnSense</span>
+  <div class="nav-links">
+    <a href="/">Prediksi</a>
+    <a href="/eda" class="active">Visualisasi EDA</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">Exploratory Data Analysis</div>
+  <h1>Visualisasi <span>Data &amp; Model</span></h1>
+  <p>Analisis eksplorasi dataset Telco Customer Churn — distribusi fitur, ketidakseimbangan kelas, performa model, dan lebih banyak.</p>
+</div>
+
+<!-- Tabs -->
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('distribusi', this)">📊 Distribusi</button>
+    <button class="tab-btn" onclick="showTab('fitur', this)">📈 Fitur vs Churn</button>
+    <button class="tab-btn" onclick="showTab('smote', this)">⚖️ Class Imbalance</button>
+    <button class="tab-btn" onclick="showTab('model', this)">🤖 Performa Model</button>
+  </div>
+
+  <!-- Tab: Distribusi -->
+  <div id="tab-distribusi" class="tab-panel active">
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="ic-title">📌 Ketidakseimbangan Kelas</div>
+        <p>Target Churn tidak seimbang: ~73.5% Tidak Churn vs ~26.5% Churn. Ini memerlukan teknik SMOTE agar model tidak bias.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ic-title">📌 Dataset</div>
+        <p>Telco Customer Churn — 7,043 pelanggan, 21 kolom, campuran fitur numerik dan kategorikal.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ic-title">📌 Target Variabel</div>
+        <p>Kolom <strong>Churn</strong>: "Yes" = pelanggan berhenti berlangganan, "No" = pelanggan tetap aktif.</p>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Distribusi Kelas Target (Churn)</div>
+      <div class="chart-desc">Bar chart dan pie chart menunjukkan ketidakseimbangan kelas antara pelanggan yang churn (Yes) dan tidak churn (No).</div>
+      <img src="/static/img/eda/01_distribusi_target.png" alt="Distribusi Target Churn" />
+    </div>
+  </div>
+
+  <!-- Tab: Fitur vs Churn -->
+  <div id="tab-fitur" class="tab-panel">
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="ic-title">📌 Tenure</div>
+        <p>Pelanggan dengan tenure lebih singkat cenderung lebih banyak churn. Pelanggan baru lebih rentan pergi.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ic-title">📌 Monthly Charges</div>
+        <p>Tagihan bulanan yang lebih tinggi berkorelasi dengan tingkat churn lebih tinggi — pelanggan merasa tidak worth-it.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ic-title">📌 Kontrak</div>
+        <p>Pelanggan dengan kontrak Month-to-month memiliki tingkat churn jauh lebih tinggi dibanding kontrak 1–2 tahun.</p>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Distribusi Fitur Numerik per Kelas Churn</div>
+      <div class="chart-desc">Histogram perbandingan distribusi tenure, MonthlyCharges, dan TotalCharges antara pelanggan yang churn vs tidak.</div>
+      <img src="/static/img/eda/02_distribusi_numerik.png" alt="Distribusi Fitur Numerik" />
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Fitur Kategorikal vs Churn</div>
+      <div class="chart-desc">Distribusi fitur kategorikal (Contract, Internet Service, Payment Method, Gender) terhadap kelas Churn.</div>
+      <img src="/static/img/eda/03_distribusi_kategorikal.png" alt="Distribusi Fitur Kategorikal" />
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Heatmap Korelasi Fitur Numerik</div>
+      <div class="chart-desc">Korelasi antar fitur numerik termasuk target Churn. Warna merah = korelasi negatif, hijau = positif.</div>
+      <img src="/static/img/eda/04_heatmap_korelasi.png" alt="Heatmap Korelasi" />
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Boxplot: MonthlyCharges &amp; Tenure vs Churn</div>
+      <div class="chart-desc">Boxplot menunjukkan perbedaan distribusi tagihan bulanan dan lama berlangganan antara kelompok churn dan tidak churn.</div>
+      <img src="/static/img/eda/05_boxplot.png" alt="Boxplot Fitur vs Churn" />
+    </div>
+  </div>
+
+  <!-- Tab: SMOTE -->
+  <div id="tab-smote" class="tab-panel">
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="ic-title">📌 Apa itu SMOTE?</div>
+        <p>SMOTE (Synthetic Minority Over-sampling Technique) membuat sampel sintetis dari kelas minoritas agar distribusi kelas menjadi seimbang.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ic-title">📌 Mengapa Diperlukan?</div>
+        <p>Tanpa SMOTE, model cenderung bias ke kelas mayoritas (Tidak Churn) dan gagal mendeteksi pelanggan yang benar-benar akan churn (FN tinggi).</p>
+      </div>
+      <div class="insight-card">
+        <div class="ic-title">📌 Hasil SMOTE</div>
+        <p>Kelas Churn meningkat dari ~1.497 ke ~4.139 sampel pada data latih, membuat distribusi 50:50 yang lebih adil untuk model.</p>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Distribusi Kelas Sebelum vs Sesudah SMOTE</div>
+      <div class="chart-desc">Perbandingan distribusi data latih sebelum dan setelah penerapan SMOTE. Sesudah SMOTE kedua kelas menjadi seimbang (50:50).</div>
+      <img src="/static/img/eda/06_smote_balance.png" alt="SMOTE Balance" />
+    </div>
+  </div>
+
+  <!-- Tab: Performa Model -->
+  <div id="tab-model" class="tab-panel">
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="ic-title">📌 Metrik Terpenting: Recall</div>
+        <p>Recall tinggi berarti model berhasil menangkap pelanggan yang benar-benar akan churn. False Negative (terlewat) jauh lebih merugikan perusahaan.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ic-title">📌 Hasil Model</div>
+        <p>Recall Churn: 77.5% | AUC: 83.3% — Model secara keseluruhan memiliki kemampuan diskriminasi yang baik (AUC > 0.8).</p>
+      </div>
+      <div class="insight-card">
+        <div class="ic-title">📌 Cross-Validation</div>
+        <p>GridSearchCV 5-fold menemukan C=1 sebagai parameter optimal. Tidak ada overfitting signifikan (gap train-val &lt; 1%).</p>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Confusion Matrix</div>
+      <div class="chart-desc">
+        Visualisasi confusion matrix: <strong>True Negative</strong> = benar tidak churn, <strong>True Positive</strong> = benar churn,
+        <strong>False Positive</strong> = salah diprediksi churn (kerugian kecil), <strong>False Negative</strong> = churn tidak terdeteksi (PALING MERUGIKAN).
+      </div>
+      <img src="/static/img/eda/07_confusion_matrix.png" alt="Confusion Matrix" />
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">ROC Curve</div>
+      <div class="chart-desc">ROC Curve menunjukkan tradeoff antara True Positive Rate dan False Positive Rate. AUC = 0.8334 menandakan kemampuan diskriminasi yang baik.</div>
+      <img src="/static/img/eda/08_roc_curve.png" alt="ROC Curve" />
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Skor Cross-Validation per Nilai C</div>
+      <div class="chart-desc">Skor ROC-AUC validasi silang (5-fold) untuk berbagai nilai parameter regularisasi C. Nilai C=1 dipilih sebagai optimal.</div>
+      <img src="/static/img/eda/09_cv_scores.png" alt="CV Scores" />
+    </div>
+  </div>
+
+</div><!-- /tabs-wrap -->
+
+<footer>
+  <p>TA-03 · Prediksi Customer Churn · Logistic Regression + SMOTE ·
+     Dataset: <a href="https://www.kaggle.com/datasets/blastchar/telco-customer-churn" target="_blank">Telco Customer Churn</a>
+  </p>
+</footer>
+
+<script>
+  function showTab(name, btn) {
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById("tab-" + name).classList.add("active");
+    btn.classList.add("active");
+  }
+</script>
+
+</body>
+</html>

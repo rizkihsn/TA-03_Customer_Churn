@@ -1,259 +1,596 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prediksi Customer Churn</title>
-    <style>
-        * { box-sizing: border-box; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChurnSense — Prediksi Customer Churn</title>
+  <meta name="description"
+        content="Aplikasi prediksi risiko customer churn menggunakan Logistic Regression dan SMOTE. Masukkan data pelanggan dan dapatkan prediksi instan." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ───────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f1f5f9;
-            color: #1e293b;
-        }
+    :root {
+      --bg-base    : #0d0608;
+      --bg-card    : #1a0b10;
+      --bg-card2   : #220e15;
+      --border     : #3b141e;
+      --text-main  : #fdf2f4;
+      --text-muted : #a68d93;
+      --red-400    : #f87171;
+      --red-500    : #ef4444;
+      --red-600    : #dc2626;
+      --red-700    : #b91c1c;
+      --red-800    : #991b1b;
+      --green-400  : #4ade80;
+      --green-500  : #22c55e;
+      --amber-400  : #fbbf24;
+      --amber-500  : #f59e0b;
+      --radius     : 14px;
+      --shadow     : 0 4px 24px rgba(0,0,0,0.6);
+    }
 
-        .container {
-            max-width: 950px;
-            margin: 35px auto;
-            padding: 25px;
-            background: white;
-            border-radius: 14px;
-            box-shadow: 0 5px 20px #00000012;
-        }
+    html { scroll-behavior: smooth; }
 
-        h1 { text-align: center; color: #1d4ed8; }
-        .subtitle { text-align: center; color: #64748b; }
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-top: 25px;
-        }
+    /* ── Navbar ─────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(13,6,8,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; gap: 1rem;
+      height: 60px;
+    }
+    .nav-logo {
+      font-size: 1.2rem; font-weight: 800;
+      background: linear-gradient(90deg, var(--red-400), var(--red-600));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -.5px;
+    }
+    .nav-links { display: flex; gap: 1.5rem; margin-left: auto; }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none;
+      font-size: .9rem; font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--text-main); }
 
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: bold;
-            font-size: 14px;
-        }
+    /* ── Hero ───────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 5rem 1.5rem 3.5rem;
+      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(220,38,38,.16), transparent);
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(220,38,38,.15);
+      border: 1px solid rgba(239,68,68,.35);
+      color: var(--red-400);
+      font-size: .78rem; font-weight: 600; letter-spacing: .05em;
+      padding: .3rem .9rem; border-radius: 99px;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 800; line-height: 1.15;
+      letter-spacing: -.03em;
+      margin-bottom: 1rem;
+    }
+    .hero h1 span {
+      background: linear-gradient(90deg, var(--red-400), var(--red-600));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem; max-width: 560px; margin: 0 auto 2rem;
+    }
 
-        input, select {
-            width: 100%;
-            padding: 11px;
-            border: 1px solid #cbd5e1;
-            border-radius: 7px;
-            background: white;
-        }
+    /* ── Stats Bar ──────────────────────────────────── */
+    .stats-bar {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;
+      max-width: 860px; margin: 0 auto 3rem;
+    }
+    .stat-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .65rem 1.3rem;
+      text-align: center;
+      min-width: 130px;
+    }
+    .stat-pill .val {
+      font-size: 1.4rem; font-weight: 700; color: var(--red-400);
+    }
+    .stat-pill .lbl {
+      font-size: .72rem; color: var(--text-muted); font-weight: 500;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
 
-        button {
-            width: 100%;
-            margin-top: 24px;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            background: #2563eb;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+    /* ── Main Layout ────────────────────────────────── */
+    .main-wrap {
+      max-width: 1000px; margin: 0 auto; padding: 0 1.5rem 5rem;
+    }
 
-        button:hover { background: #1d4ed8; }
+    /* ── Card ───────────────────────────────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .card-title {
+      font-size: 1rem; font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .card-title::after {
+      content: ""; flex: 1;
+      height: 1px; background: var(--border);
+    }
 
-        .result {
-            margin-top: 25px;
-            padding: 20px;
-            border-radius: 10px;
-            background: #eff6ff;
-            text-align: center;
-        }
+    /* ── Form Grid ──────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.1rem;
+    }
+    .field label {
+      display: block;
+      font-size: .8rem; font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: .45rem;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: .65rem .9rem;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-family: inherit; font-size: .92rem;
+      transition: border-color .2s, box-shadow .2s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: var(--red-500);
+      box-shadow: 0 0 0 3px rgba(239,68,68,.22);
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a68d93' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right .9rem center;
+      padding-right: 2.5rem;
+    }
 
-        .result h2 { margin-top: 0; }
+    /* ── Submit Button ──────────────────────────────── */
+    .btn-predict {
+      width: 100%; margin-top: 1.8rem;
+      padding: .95rem 1.5rem;
+      background: linear-gradient(135deg, var(--red-600), var(--red-800));
+      border: none; border-radius: 10px;
+      color: white; font-family: inherit;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; letter-spacing: .02em;
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+      box-shadow: 0 4px 16px rgba(220,38,38,.35);
+    }
+    .btn-predict:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(220,38,38,.5);
+    }
+    .btn-predict:active { transform: translateY(0); }
 
-        @media (max-width: 600px) {
-            .container { margin: 12px; padding: 18px; }
-            .form-grid { grid-template-columns: 1fr; }
-        }
-    </style>
+    /* ── Result Card ────────────────────────────────── */
+    .result-card {
+      border-radius: var(--radius);
+      padding: 2rem 2.5rem;
+      text-align: center;
+      animation: slideUp .4s ease;
+      margin-bottom: 2rem;
+      position: relative; overflow: hidden;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-card.low    { background: rgba(34,197,94,.1);  border: 1.5px solid rgba(34,197,94,.35); }
+    .result-card.medium { background: rgba(251,191,36,.1); border: 1.5px solid rgba(251,191,36,.35); }
+    .result-card.high   { background: rgba(239,68,68,.1);  border: 1.5px solid rgba(239,68,68,.35); }
+
+    .result-icon { font-size: 3.5rem; margin-bottom: .75rem; }
+
+    .result-title {
+      font-size: 1.6rem; font-weight: 800; margin-bottom: .4rem;
+    }
+    .result-card.low    .result-title { color: var(--green-400); }
+    .result-card.medium .result-title { color: var(--amber-400); }
+    .result-card.high   .result-title { color: var(--red-400); }
+
+    .result-subtitle {
+      color: var(--text-muted); font-size: .95rem; margin-bottom: 1.5rem;
+    }
+
+    /* Probability Ring */
+    .prob-ring-wrap {
+      display: flex; justify-content: center; margin-bottom: 1.2rem;
+    }
+    .prob-ring-svg { transform: rotate(-90deg); }
+    .prob-ring-bg  { fill: none; stroke: var(--border); stroke-width: 8; }
+    .prob-ring-fg  {
+      fill: none; stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    .result-card.low    .prob-ring-fg { stroke: var(--green-500); }
+    .result-card.medium .prob-ring-fg { stroke: var(--amber-500); }
+    .result-card.high   .prob-ring-fg { stroke: var(--red-500); }
+
+    .prob-ring-text {
+      position: absolute;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      inset: 0;
+    }
+    .prob-ring-outer { position: relative; width: 130px; height: 130px; }
+    .prob-val  { font-size: 2rem; font-weight: 800; }
+    .prob-label{ font-size: .7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+
+    .result-recommendation {
+      background: rgba(255,255,255,.04);
+      border-radius: 10px;
+      padding: .9rem 1.2rem;
+      font-size: .88rem; color: var(--text-muted);
+      text-align: left;
+    }
+    .result-recommendation strong { color: var(--text-main); }
+
+    /* ── Footer ─────────────────────────────────────── */
+    footer {
+      text-align: center; padding: 1.5rem;
+      color: var(--text-muted); font-size: .8rem;
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--red-400); text-decoration: none; }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 600px) {
+      .hero { padding: 3rem 1rem 2rem; }
+      .card { padding: 1.25rem; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-    <h1>Prediksi Customer Churn</h1>
-    <p class="subtitle">
-        Prediksi risiko pelanggan berhenti berlangganan
-        menggunakan Logistic Regression.
-    </p>
 
-    <form method="POST">
-        <div class="form-grid">
-            <div>
-                <label>Jenis Kelamin</label>
-                <select name="gender">
-                    <option>Female</option>
-                    <option>Male</option>
-                </select>
-            </div>
+<!-- ── Navbar ─────────────────────────────────────────── -->
+<nav>
+  <span class="nav-logo">⚡ ChurnSense</span>
+  <div class="nav-links">
+    <a href="/" class="active">Prediksi</a>
+    <a href="/eda">Visualisasi EDA</a>
+  </div>
+</nav>
 
-            <div>
-                <label>Senior Citizen</label>
-                <select name="SeniorCitizen">
-                    <option value="0">Tidak</option>
-                    <option value="1">Ya</option>
-                </select>
-            </div>
+<!-- ── Hero ───────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-badge">TA-03 · Machine Learning · Regresi Logistik</div>
+  <h1>Prediksi Risiko <span>Customer Churn</span></h1>
+  <p>Masukkan data pelanggan untuk mengetahui apakah pelanggan tersebut berisiko berhenti berlangganan (churn) pada bulan berikutnya.</p>
 
-            <div>
-                <label>Memiliki Pasangan</label>
-                <select name="Partner">
-                    <option>Yes</option><option>No</option>
-                </select>
-            </div>
+  <!-- Stats Pills -->
+  <div class="stats-bar">
+    <div class="stat-pill">
+      <div class="val">{{ "%.1f"|format(stats.accuracy) }}%</div>
+      <div class="lbl">Akurasi</div>
+    </div>
+    <div class="stat-pill">
+      <div class="val">{{ "%.1f"|format(stats.recall) }}%</div>
+      <div class="lbl">Recall (Churn)</div>
+    </div>
+    <div class="stat-pill">
+      <div class="val">{{ "%.1f"|format(stats.auc) }}%</div>
+      <div class="lbl">ROC-AUC</div>
+    </div>
+    <div class="stat-pill">
+      <div class="val">{{ "%.1f"|format(stats.f1) }}%</div>
+      <div class="lbl">F1-Score</div>
+    </div>
+    <div class="stat-pill" style="min-width:200px">
+      <div class="val" style="font-size:.95rem">{{ stats.algorithm }}</div>
+      <div class="lbl">Algoritma</div>
+    </div>
+  </div>
+</div>
 
-            <div>
-                <label>Memiliki Tanggungan</label>
-                <select name="Dependents">
-                    <option>Yes</option><option>No</option>
-                </select>
-            </div>
+<!-- ── Result (jika ada) ───────────────────────────────── -->
+{% if hasil is not none %}
+<div class="main-wrap">
+  <div class="result-card {{ risk_level }}">
+    <div class="result-icon">
+      {% if risk_level == "low" %}✅{% elif risk_level == "medium" %}⚠️{% else %}🚨{% endif %}
+    </div>
+    <div class="result-title">{{ hasil }}</div>
+    <div class="result-subtitle">
+      Berdasarkan data yang dimasukkan, model memprediksi:
+    </div>
 
-            <div>
-                <label>Lama Berlangganan (bulan)</label>
-                <input type="number" name="tenure" min="0" max="72"
-                       value="12" required>
-            </div>
+    <!-- Probability Ring -->
+    <div class="prob-ring-wrap">
+      <div class="prob-ring-outer">
+        <svg class="prob-ring-svg" width="130" height="130" viewBox="0 0 130 130">
+          <circle class="prob-ring-bg" cx="65" cy="65" r="54"/>
+          <circle class="prob-ring-fg" id="prob-circle" cx="65" cy="65" r="54"
+                  stroke-dasharray="339.3"
+                  stroke-dashoffset="{{ 339.3 - (probabilitas / 100 * 339.3) }}"/>
+        </svg>
+        <div class="prob-ring-text">
+          <span class="prob-val">{{ "%.0f"|format(probabilitas) }}%</span>
+          <span class="prob-label">Prob. Churn</span>
+        </div>
+      </div>
+    </div>
 
-            <div>
-                <label>Layanan Telepon</label>
-                <select name="PhoneService">
-                    <option>Yes</option><option>No</option>
-                </select>
-            </div>
+    <!-- Rekomendasi -->
+    <div class="result-recommendation">
+      {% if risk_level == "low" %}
+        <strong>✅ Rekomendasi:</strong> Pelanggan ini cenderung loyal. Pertahankan dengan program reward atau loyalitas reguler. Pantau secara berkala.
+      {% elif risk_level == "medium" %}
+        <strong>⚠️ Rekomendasi:</strong> Perlu perhatian khusus. Hubungi pelanggan untuk mengetahui kepuasan layanan. Pertimbangkan penawaran diskon atau upgrade paket.
+      {% else %}
+        <strong>🚨 Rekomendasi:</strong> Risiko churn SANGAT TINGGI. Segera lakukan intervensi — tawarkan paket khusus, perpanjang kontrak dengan insentif, atau eskalasi ke tim retensi.
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
 
-            <div>
-                <label>Multiple Lines</label>
-                <select name="MultipleLines">
-                    <option>No</option>
-                    <option>Yes</option>
-                    <option>No phone service</option>
-                </select>
-            </div>
+<!-- ── Form ────────────────────────────────────────────── -->
+<div class="main-wrap">
+  <form id="predict-form" method="POST" action="/">
 
-            <div>
-                <label>Layanan Internet</label>
-                <select name="InternetService">
-                    <option>DSL</option>
-                    <option>Fiber optic</option>
-                    <option>No</option>
-                </select>
-            </div>
+    <!-- Demografi -->
+    <div class="card">
+      <div class="card-title">👤 Data Demografis</div>
+      <div class="form-grid">
 
-            <div>
-                <label>Online Security</label>
-                <select name="OnlineSecurity">
-                    <option>Yes</option>
-                    <option>No</option>
-                    <option>No internet service</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Online Backup</label>
-                <select name="OnlineBackup">
-                    <option>Yes</option>
-                    <option>No</option>
-                    <option>No internet service</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Device Protection</label>
-                <select name="DeviceProtection">
-                    <option>Yes</option>
-                    <option>No</option>
-                    <option>No internet service</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Tech Support</label>
-                <select name="TechSupport">
-                    <option>Yes</option>
-                    <option>No</option>
-                    <option>No internet service</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Streaming TV</label>
-                <select name="StreamingTV">
-                    <option>Yes</option>
-                    <option>No</option>
-                    <option>No internet service</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Streaming Movies</label>
-                <select name="StreamingMovies">
-                    <option>Yes</option>
-                    <option>No</option>
-                    <option>No internet service</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Jenis Kontrak</label>
-                <select name="Contract">
-                    <option>Month-to-month</option>
-                    <option>One year</option>
-                    <option>Two year</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Tagihan Tanpa Kertas</label>
-                <select name="PaperlessBilling">
-                    <option>Yes</option><option>No</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Metode Pembayaran</label>
-                <select name="PaymentMethod">
-                    <option>Electronic check</option>
-                    <option>Mailed check</option>
-                    <option>Bank transfer (automatic)</option>
-                    <option>Credit card (automatic)</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Tagihan Bulanan ($)</label>
-                <input type="number" name="MonthlyCharges"
-                       min="0" step="0.01" value="70" required>
-            </div>
-
-            <div>
-                <label>Total Tagihan ($)</label>
-                <input type="number" name="TotalCharges"
-                       min="0" step="0.01" value="840" required>
-            </div>
+        <div class="field">
+          <label for="gender">Jenis Kelamin</label>
+          <select name="gender" id="gender">
+            <option value="Male"   {% if form_data.get('gender')=='Male'   %}selected{% endif %}>Pria (Male)</option>
+            <option value="Female" {% if form_data.get('gender')=='Female' %}selected{% endif %}>Wanita (Female)</option>
+          </select>
         </div>
 
-        <button type="submit">Prediksi Churn</button>
-    </form>
+        <div class="field">
+          <label for="SeniorCitizen">Lansia (≥ 65 th)?</label>
+          <select name="SeniorCitizen" id="SeniorCitizen">
+            <option value="0" {% if form_data.get('SeniorCitizen')=='0' %}selected{% endif %}>Tidak</option>
+            <option value="1" {% if form_data.get('SeniorCitizen')=='1' %}selected{% endif %}>Ya</option>
+          </select>
+        </div>
 
-    {% if hasil is not none %}
-    <div class="result">
-        <h2>Hasil Prediksi: {{ hasil }}</h2>
-        <p>Probabilitas churn: {{ "%.2f"|format(probabilitas) }}%</p>
-        <p>Hasil ini merupakan estimasi model, bukan kepastian.</p>
+        <div class="field">
+          <label for="Partner">Memiliki Pasangan?</label>
+          <select name="Partner" id="Partner">
+            <option value="Yes" {% if form_data.get('Partner')=='Yes' %}selected{% endif %}>Ya</option>
+            <option value="No"  {% if form_data.get('Partner')=='No'  %}selected{% endif %}>Tidak</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="Dependents">Memiliki Tanggungan?</label>
+          <select name="Dependents" id="Dependents">
+            <option value="Yes" {% if form_data.get('Dependents')=='Yes' %}selected{% endif %}>Ya</option>
+            <option value="No"  {% if form_data.get('Dependents')=='No'  %}selected{% endif %}>Tidak</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="tenure">Lama Berlangganan (bln)</label>
+          <input type="number" name="tenure" id="tenure" min="0" max="72"
+                 value="{{ form_data.get('tenure', 12) }}" required />
+        </div>
+
+      </div>
     </div>
-    {% endif %}
+
+    <!-- Layanan -->
+    <div class="card">
+      <div class="card-title">📡 Layanan yang Digunakan</div>
+      <div class="form-grid">
+
+        <div class="field">
+          <label for="PhoneService">Layanan Telepon</label>
+          <select name="PhoneService" id="PhoneService">
+            <option value="Yes" {% if form_data.get('PhoneService')=='Yes' %}selected{% endif %}>Ya</option>
+            <option value="No"  {% if form_data.get('PhoneService')=='No'  %}selected{% endif %}>Tidak</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="MultipleLines">Banyak Saluran?</label>
+          <select name="MultipleLines" id="MultipleLines">
+            <option value="No"               {% if form_data.get('MultipleLines')=='No'               %}selected{% endif %}>Tidak</option>
+            <option value="Yes"              {% if form_data.get('MultipleLines')=='Yes'              %}selected{% endif %}>Ya</option>
+            <option value="No phone service" {% if form_data.get('MultipleLines')=='No phone service' %}selected{% endif %}>Tanpa telepon</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="InternetService">Layanan Internet</label>
+          <select name="InternetService" id="InternetService">
+            <option value="DSL"         {% if form_data.get('InternetService')=='DSL'         %}selected{% endif %}>DSL</option>
+            <option value="Fiber optic" {% if form_data.get('InternetService')=='Fiber optic' %}selected{% endif %}>Fiber Optic</option>
+            <option value="No"          {% if form_data.get('InternetService')=='No'          %}selected{% endif %}>Tidak ada</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="OnlineSecurity">Keamanan Online</label>
+          <select name="OnlineSecurity" id="OnlineSecurity">
+            <option value="Yes"                {% if form_data.get('OnlineSecurity')=='Yes'                %}selected{% endif %}>Ya</option>
+            <option value="No"                 {% if form_data.get('OnlineSecurity')=='No'                 %}selected{% endif %}>Tidak</option>
+            <option value="No internet service"{% if form_data.get('OnlineSecurity')=='No internet service'%}selected{% endif %}>Tanpa internet</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="OnlineBackup">Backup Online</label>
+          <select name="OnlineBackup" id="OnlineBackup">
+            <option value="Yes"                {% if form_data.get('OnlineBackup')=='Yes'                %}selected{% endif %}>Ya</option>
+            <option value="No"                 {% if form_data.get('OnlineBackup')=='No'                 %}selected{% endif %}>Tidak</option>
+            <option value="No internet service"{% if form_data.get('OnlineBackup')=='No internet service'%}selected{% endif %}>Tanpa internet</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="DeviceProtection">Proteksi Perangkat</label>
+          <select name="DeviceProtection" id="DeviceProtection">
+            <option value="Yes"                {% if form_data.get('DeviceProtection')=='Yes'                %}selected{% endif %}>Ya</option>
+            <option value="No"                 {% if form_data.get('DeviceProtection')=='No'                 %}selected{% endif %}>Tidak</option>
+            <option value="No internet service"{% if form_data.get('DeviceProtection')=='No internet service'%}selected{% endif %}>Tanpa internet</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="TechSupport">Dukungan Teknis</label>
+          <select name="TechSupport" id="TechSupport">
+            <option value="Yes"                {% if form_data.get('TechSupport')=='Yes'                %}selected{% endif %}>Ya</option>
+            <option value="No"                 {% if form_data.get('TechSupport')=='No'                 %}selected{% endif %}>Tidak</option>
+            <option value="No internet service"{% if form_data.get('TechSupport')=='No internet service'%}selected{% endif %}>Tanpa internet</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="StreamingTV">Streaming TV</label>
+          <select name="StreamingTV" id="StreamingTV">
+            <option value="Yes"                {% if form_data.get('StreamingTV')=='Yes'                %}selected{% endif %}>Ya</option>
+            <option value="No"                 {% if form_data.get('StreamingTV')=='No'                 %}selected{% endif %}>Tidak</option>
+            <option value="No internet service"{% if form_data.get('StreamingTV')=='No internet service'%}selected{% endif %}>Tanpa internet</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="StreamingMovies">Streaming Film</label>
+          <select name="StreamingMovies" id="StreamingMovies">
+            <option value="Yes"                {% if form_data.get('StreamingMovies')=='Yes'                %}selected{% endif %}>Ya</option>
+            <option value="No"                 {% if form_data.get('StreamingMovies')=='No'                 %}selected{% endif %}>Tidak</option>
+            <option value="No internet service"{% if form_data.get('StreamingMovies')=='No internet service'%}selected{% endif %}>Tanpa internet</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Billing -->
+    <div class="card">
+      <div class="card-title">💳 Informasi Tagihan &amp; Kontrak</div>
+      <div class="form-grid">
+
+        <div class="field">
+          <label for="Contract">Jenis Kontrak</label>
+          <select name="Contract" id="Contract">
+            <option value="Month-to-month" {% if form_data.get('Contract')=='Month-to-month' %}selected{% endif %}>Bulanan</option>
+            <option value="One year"       {% if form_data.get('Contract')=='One year'       %}selected{% endif %}>1 Tahun</option>
+            <option value="Two year"       {% if form_data.get('Contract')=='Two year'       %}selected{% endif %}>2 Tahun</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="PaperlessBilling">Tagihan Tanpa Kertas?</label>
+          <select name="PaperlessBilling" id="PaperlessBilling">
+            <option value="Yes" {% if form_data.get('PaperlessBilling')=='Yes' %}selected{% endif %}>Ya</option>
+            <option value="No"  {% if form_data.get('PaperlessBilling')=='No'  %}selected{% endif %}>Tidak</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="PaymentMethod">Metode Pembayaran</label>
+          <select name="PaymentMethod" id="PaymentMethod">
+            <option value="Electronic check"     {% if form_data.get('PaymentMethod')=='Electronic check'     %}selected{% endif %}>Cek Elektronik</option>
+            <option value="Mailed check"         {% if form_data.get('PaymentMethod')=='Mailed check'         %}selected{% endif %}>Cek Pos</option>
+            <option value="Bank transfer (automatic)" {% if form_data.get('PaymentMethod')=='Bank transfer (automatic)' %}selected{% endif %}>Transfer Bank (Auto)</option>
+            <option value="Credit card (automatic)"   {% if form_data.get('PaymentMethod')=='Credit card (automatic)'   %}selected{% endif %}>Kartu Kredit (Auto)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="MonthlyCharges">Tagihan Bulanan ($)</label>
+          <input type="number" name="MonthlyCharges" id="MonthlyCharges"
+                 min="0" step="0.01"
+                 value="{{ form_data.get('MonthlyCharges', 70) }}" required />
+        </div>
+
+        <div class="field">
+          <label for="TotalCharges">Total Tagihan ($)</label>
+          <input type="number" name="TotalCharges" id="TotalCharges"
+                 min="0" step="0.01"
+                 value="{{ form_data.get('TotalCharges', 840) }}" required />
+        </div>
+
+      </div>
+
+      <button type="submit" class="btn-predict" id="submit-btn">
+        🔍 Prediksi Risiko Churn
+      </button>
+    </div>
+
+  </form>
 </div>
+
+<!-- ── Footer ─────────────────────────────────────────── -->
+<footer>
+  <p>TA-03 · Prediksi Customer Churn · Logistic Regression + SMOTE ·
+     Dataset: <a href="https://www.kaggle.com/datasets/blastchar/telco-customer-churn" target="_blank">Telco Customer Churn</a>
+  </p>
+</footer>
+
+<script>
+  // Animate ring on load (if result exists)
+  const circle = document.getElementById("prob-circle");
+  if (circle) {
+    const target = parseFloat(circle.getAttribute("stroke-dashoffset"));
+    circle.style.strokeDashoffset = "339.3";
+    requestAnimationFrame(() => {
+      setTimeout(() => { circle.style.strokeDashoffset = target; }, 50);
+    });
+  }
+
+  // Loading state on submit
+  const form = document.getElementById("predict-form");
+  const btn  = document.getElementById("submit-btn");
+  if (form) {
+    form.addEventListener("submit", () => {
+      btn.textContent = "⏳ Memproses...";
+      btn.disabled = true;
+    });
+  }
+
+  // Scroll to result
+  const result = document.querySelector(".result-card");
+  if (result) {
+    setTimeout(() => result.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
+  }
+</script>
+
 </body>
 </html>
